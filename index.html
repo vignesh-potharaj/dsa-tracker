@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DSA Revision Tracker</title>
+  <style>
+    body { font-family: Arial; padding: 30px; background: #111; color: white; }
+    input, button { padding: 8px; margin: 5px; }
+    .card { background: #222; padding: 15px; margin-top: 10px; border-radius: 8px; }
+    .due { color: #ff4d4d; }
+    .done { color: #00cc66; }
+  </style>
+</head>
+<body>
+
+<h1>DSA Revision Tracker</h1>
+
+<input type="text" id="problemName" placeholder="Enter Problem Name">
+<button onclick="addProblem()">Add Problem</button>
+
+<h2>Due Today</h2>
+<div id="dueList"></div>
+
+<h2>All Problems</h2>
+<div id="allProblems"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
