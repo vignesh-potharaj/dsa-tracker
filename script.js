@@ -1,7 +1,9 @@
 let problems = JSON.parse(localStorage.getItem("problems")) || [];
+let completedToday = JSON.parse(localStorage.getItem("completedToday")) || [];
 
 function save() {
   localStorage.setItem("problems", JSON.stringify(problems));
+  localStorage.setItem("completedToday", JSON.stringify(completedToday));
 }
 
 function addProblem() {
@@ -30,9 +32,19 @@ function isSameDay(d1, d2) {
   return new Date(d1).toDateString() === new Date(d2).toDateString();
 }
 
-function markRevision(id, date) {
-  const problem = problems.find(p => p.id === id);
-  problem.completedRevisions.push(date);
+function markRevision(problemId, revisionDate) {
+  const problem = problems.find(p => p.id === problemId);
+  if (!problem) return;
+
+  // Mark revision as completed
+  problem.completedRevisions.push(revisionDate);
+
+  // Add to completedToday list
+  completedToday.push({
+    name: problem.name,
+    completedAt: new Date()
+  });
+
   save();
   render();
 }
@@ -40,14 +52,24 @@ function markRevision(id, date) {
 function render() {
   const dueList = document.getElementById("dueList");
   const allProblems = document.getElementById("allProblems");
+
+  // Create completed section if not exists
+  let completedSection = document.getElementById("completedSection");
+  if (!completedSection) {
+    completedSection = document.createElement("div");
+    completedSection.id = "completedSection";
+    document.body.appendChild(completedSection);
+  }
+
   dueList.innerHTML = "";
   allProblems.innerHTML = "";
+  completedSection.innerHTML = "<h2>Completed Today</h2>";
 
   const today = new Date();
 
   problems.forEach(problem => {
 
-    // Due section
+    // DUE TODAY
     problem.revisionDates.forEach(date => {
       if (
         isSameDay(date, today) &&
@@ -58,14 +80,14 @@ function render() {
         div.innerHTML = `
           ${problem.name} - Revision Due
           <button onclick="markRevision(${problem.id}, '${date}')">
-            Mark Done
+            Mark Complete
           </button>
         `;
         dueList.appendChild(div);
       }
     });
 
-    // All problems
+    // ALL PROBLEMS
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -73,6 +95,18 @@ function render() {
       Solved: ${new Date(problem.dateSolved).toDateString()}
     `;
     allProblems.appendChild(card);
+  });
+
+  // COMPLETED TODAY
+  completedToday.forEach(item => {
+    if (isSameDay(item.completedAt, today)) {
+      const div = document.createElement("div");
+      div.className = "card done";
+      div.innerHTML = `
+        ${item.name} - Completed
+      `;
+      completedSection.appendChild(div);
+    }
   });
 }
 
