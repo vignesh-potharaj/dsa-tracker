@@ -1,9 +1,14 @@
 let problems = JSON.parse(localStorage.getItem("problems")) || [];
 let completedToday = JSON.parse(localStorage.getItem("completedToday")) || [];
+let streakData = JSON.parse(localStorage.getItem("streakData")) || {
+  currentStreak: 0,
+  lastCompletedDate: null
+};
 
 function save() {
   localStorage.setItem("problems", JSON.stringify(problems));
   localStorage.setItem("completedToday", JSON.stringify(completedToday));
+  localStorage.setItem("streakData", JSON.stringify(streakData));
 }
 
 function addProblem() {
@@ -43,6 +48,21 @@ function markRevision(problemId, revisionDate) {
   render();
 }
 
+function updateStreak(dueCount) {
+  const today = new Date().toDateString();
+
+  if (dueCount === 0) {
+    if (streakData.lastCompletedDate !== today) {
+      streakData.currentStreak += 1;
+      streakData.lastCompletedDate = today;
+    }
+  } else {
+    streakData.currentStreak = 0;
+  }
+
+  save();
+}
+
 function render() {
   const dueList = document.getElementById("dueList");
   const allProblems = document.getElementById("allProblems");
@@ -54,31 +74,55 @@ function render() {
     document.body.appendChild(completedSection);
   }
 
+  let streakSection = document.getElementById("streakSection");
+  if (!streakSection) {
+    streakSection = document.createElement("div");
+    streakSection.id = "streakSection";
+    document.body.insertBefore(streakSection, document.body.firstChild);
+  }
+
   dueList.innerHTML = "";
   allProblems.innerHTML = "";
   completedSection.innerHTML = "<h2>Completed Today</h2>";
+  streakSection.innerHTML = `<h2>🔥 Streak: ${streakData.currentStreak} days</h2>`;
 
   const today = new Date();
 
-  problems.forEach(problem => {
+  let dueItems = [];
 
+  problems.forEach(problem => {
     problem.revisionDates.forEach(date => {
       if (
         new Date(date) <= today &&
         !problem.completedRevisions.includes(date)
       ) {
-        const div = document.createElement("div");
-        div.className = "card due";
-        div.innerHTML = `
-          ${problem.name} - Revision Due
-          <button onclick="markRevision(${problem.id}, '${date}')">
-            Mark Complete
-          </button>
-        `;
-        dueList.appendChild(div);
+        dueItems.push({
+          problem,
+          date: new Date(date)
+        });
       }
     });
+  });
 
+  // 🔥 Sort oldest first
+  dueItems.sort((a, b) => a.date - b.date);
+
+  dueItems.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "card due";
+    div.innerHTML = `
+      ${item.problem.name} - Due ${item.date.toDateString()}
+      <button onclick="markRevision(${item.problem.id}, '${item.date}')">
+        Mark Complete
+      </button>
+    `;
+    dueList.appendChild(div);
+  });
+
+  // Update streak
+  updateStreak(dueItems.length);
+
+  problems.forEach(problem => {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
@@ -92,9 +136,7 @@ function render() {
     if (new Date(item.completedAt).toDateString() === today.toDateString()) {
       const div = document.createElement("div");
       div.className = "card done";
-      div.innerHTML = `
-        ${item.name} - Completed
-      `;
+      div.innerHTML = `${item.name} - Completed`;
       completedSection.appendChild(div);
     }
   });
